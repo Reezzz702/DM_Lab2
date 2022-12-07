@@ -14,13 +14,14 @@ def load(mode):
 
 def check_type(df):
     for c in df.columns:
-        print(df.c.dtype)
+        if df[c].dtype.name == "object":
+            df[c] = pd.factorize(df[c], sort=True)[0].astype(int)
 
 
 def main(args):
     data, label = load(args.mode)
-    print(data.info())
     check_type(data)
+    print(data.info())
 
 if __name__ == '__main__':
     parser = ArgumentParser()
