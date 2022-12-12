@@ -26,7 +26,7 @@ def train_val(args):
 
     best_model = None
     xgb_model = xgb.XGBClassifier(objective="binary:logistic")
-    xgb_model.fit(X_train, y_train, early_stopping_rounds=10, eval_set=[(X_val, y_val)], verbose=False)
+    xgb_model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
 
     xgb.plot_importance(xgb_model, max_num_features=20)
     plt.show()
