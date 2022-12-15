@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn import preprocessing
 from sklearn.utils import resample
-from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
 import csv
@@ -23,6 +23,11 @@ def upsample(data, label):
 
     died_upsampled = resample(died, n_samples=int(len(survived)/2))
     data_upsampled = pd.concat([survived, died_upsampled])
+    # data_upsampled.groupby('has_died').size().plot(kind='pie',
+    #                                    y = "v1",
+    #                                    label = "Type",
+    #                                    autopct='%1.1f%%')
+    # plt.show()
     Y = data_upsampled['has_died']
     X = data_upsampled.drop('has_died', axis=1)
     return X,Y
@@ -53,15 +58,16 @@ def train_val():
     xgb_model = xgb.XGBClassifier(objective="binary:logistic")
     xgb_model.fit(X_upsampled, y_upsampled, eval_set=[(X_val, y_val)], verbose=False)
 
-    xgb.plot_importance(xgb_model, max_num_features=20)
-    plt.show()
-    # check missing value count
-    # print(data.isnull().sum(axis=0).sort_values(ascending=False))
-    # data = data[data.isna().sum(axis=1) == 0]
     label_pred = xgb_model.predict(X_val)
+    label_prob = xgb_model.predict_proba(X_val)[:, 1]
 
     print(confusion_matrix(y_val, label_pred))
     print(f1_score(y_val, label_pred, average='macro'))
+    fpr, tpr, _ = roc_curve(y_val, label_prob)
+    plt.plot(fpr,tpr)
+    plt.show()
+    xgb.plot_importance(xgb_model, max_num_features=20)
+    plt.show()
     print(roc_auc_score(y_val, label_pred, average='macro'))
 
     return xgb_model
@@ -79,7 +85,7 @@ def test(model):
     index = patient_id.argsort()
     pred = model.predict(data)
 
-    with open("test.csv", 'w', newline='') as f:
+    with open("testing_result.csv", 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['patient_id', 'pred'])
         for i in range(len(index)):
